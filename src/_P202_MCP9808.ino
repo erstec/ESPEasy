@@ -50,15 +50,29 @@ boolean Plugin_202(uint8_t function, struct EventStruct *event, String& string)
     }
 
     case PLUGIN_I2C_HAS_ADDRESS:
+    case PLUGIN_WEBFORM_SHOW_I2C_PARAMS:
     {
-      success = (event->Par1 == 0x77);
+      const uint8_t i2cAddressValues[] = { 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F };
+
+      if (function == PLUGIN_WEBFORM_SHOW_I2C_PARAMS) {
+        addFormSelectorI2C(F("i2c_addr"), 8, i2cAddressValues, PCONFIG(0));
+        // addFormNote(F("ADDR Low=0x18, High=0x1f"));
+      } else {
+        success = intArrayContains(8, i2cAddressValues, event->Par1);
+      }
       break;
     }
+
+    // case PLUGIN_I2C_HAS_ADDRESS:
+    // {
+    //   success = (event->Par1 == 0x18);
+    //   break;
+    // }
 
     # if FEATURE_I2C_GET_ADDRESS
     case PLUGIN_I2C_GET_ADDRESS:
     {
-      event->Par1 = 0x77;
+      event->Par1 = PCONFIG(0);
       success     = true;
       break;
     }
@@ -66,14 +80,15 @@ boolean Plugin_202(uint8_t function, struct EventStruct *event, String& string)
 
     case PLUGIN_WEBFORM_LOAD:
     {
-      addFormNumericBox(F("Altitude [m]"), F("elev"), PCONFIG(1));
+      // addFormNumericBox(F("Altitude [m]"), F("elev"), PCONFIG(1));
       success = true;
       break;
     }
 
     case PLUGIN_WEBFORM_SAVE:
     {
-      PCONFIG(1) = getFormItemInt(F("elev"));
+      // PCONFIG(1) = getFormItemInt(F("elev"));
+      PCONFIG(0) = getFormItemInt(F("i2c_addr"));
       success    = true;
       break;
     }
