@@ -4,35 +4,21 @@
 #include "../../_Plugin_Helper.h"
 #ifdef USES_P202
 
-
-# define BMP085_ULTRAHIGHRES         3
-
 struct P202_data_struct : public PluginTaskData_base {
   P202_data_struct() = default;
   virtual ~P202_data_struct() = default;
 
   bool     begin();
 
-  uint16_t readRawTemperature();
-
-  uint32_t readRawPressure();
-
-  int32_t  readPressure();
-
   float    readTemperature();
 
-  uint8_t  oversampling = BMP085_ULTRAHIGHRES;
-  int16_t  ac1 = 0;
-  int16_t  ac2 = 0;
-  int16_t  ac3 = 0;
-  int16_t  b1 = 0;
-  int16_t  b2 = 0;
-  int16_t  mb = 0;
-  int16_t  mc = 0;
-  int16_t  md = 0;
-  uint16_t ac4 = 0;
-  uint16_t ac5 = 0;
-  uint16_t ac6 = 0;
+  int32_t set_config(uint8_t reg, uint16_t cfg);
+  int32_t set_upper_limit(uint8_t reg, uint16_t cfg);
+  int32_t set_lower_limit(uint8_t reg, uint16_t cfg);
+  int32_t set_critical_limit(uint8_t reg, uint16_t cfg);
+  int32_t read_temp_reg(uint8_t reg, uint16_t *temp);
+  int32_t set_resolution(uint8_t reg, uint8_t resolution);
+  float caculate_temp(uint16_t temp);
 
   bool initialized = false;
 };

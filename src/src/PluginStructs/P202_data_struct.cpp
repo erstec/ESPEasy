@@ -2,132 +2,127 @@
 
 #ifdef USES_P202
 
+#define SET_CONFIG_ADDR           0X01
+#define SET_UPPER_LIMIT_ADDR      0X02
+#define SET_LOWER_LIMIT_ADDR      0X03
+#define SET_CRITICAL_LIMIT_ADDR   0X04
 
-# define BMP085_I2CADDR           0x77
-# define BMP085_CAL_AC1           0xAA // R   Calibration data (16 bits)
-# define BMP085_CAL_AC2           0xAC // R   Calibration data (16 bits)
-# define BMP085_CAL_AC3           0xAE // R   Calibration data (16 bits)
-# define BMP085_CAL_AC4           0xB0 // R   Calibration data (16 bits)
-# define BMP085_CAL_AC5           0xB2 // R   Calibration data (16 bits)
-# define BMP085_CAL_AC6           0xB4 // R   Calibration data (16 bits)
-# define BMP085_CAL_B1            0xB6 // R   Calibration data (16 bits)
-# define BMP085_CAL_B2            0xB8 // R   Calibration data (16 bits)
-# define BMP085_CAL_MB            0xBA // R   Calibration data (16 bits)
-# define BMP085_CAL_MC            0xBC // R   Calibration data (16 bits)
-# define BMP085_CAL_MD            0xBE // R   Calibration data (16 bits)
-# define BMP085_CONTROL           0xF4
-# define BMP085_TEMPDATA          0xF6
-# define BMP085_PRESSUREDATA      0xF6
-# define BMP085_READTEMPCMD       0x2E
-# define BMP085_READPRESSURECMD   0x34
+#define AMBIENT_TEMPERATURE_ADDR  0X05
+#define SET_RESOLUTION_ADDR       0X08
 
+#define DEFAULT_IIC_ADDR  0X18
+
+#define RESOLUTION_0_5_DEGREE               0
+#define RESOLUTION_0_25_DEGREE              0X01
+#define RESOLUTION_0_125_DEGREE             0X02
+#define RESOLUTION_0_0625_DEGREE            0X03
+#define SIGN_BIT                            0X10
 
 bool P202_data_struct::begin()
 {
   if (!initialized) {
-    if (I2C_read8_reg(BMP085_I2CADDR, 0xD0) != 0x55) { return false; }
-
-    /* read calibration data */
-    ac1 = I2C_read16_reg(BMP085_I2CADDR, BMP085_CAL_AC1);
-    ac2 = I2C_read16_reg(BMP085_I2CADDR, BMP085_CAL_AC2);
-    ac3 = I2C_read16_reg(BMP085_I2CADDR, BMP085_CAL_AC3);
-    ac4 = I2C_read16_reg(BMP085_I2CADDR, BMP085_CAL_AC4);
-    ac5 = I2C_read16_reg(BMP085_I2CADDR, BMP085_CAL_AC5);
-    ac6 = I2C_read16_reg(BMP085_I2CADDR, BMP085_CAL_AC6);
-
-    b1 = I2C_read16_reg(BMP085_I2CADDR, BMP085_CAL_B1);
-    b2 = I2C_read16_reg(BMP085_I2CADDR, BMP085_CAL_B2);
-
-    mb = I2C_read16_reg(BMP085_I2CADDR, BMP085_CAL_MB);
-    mc = I2C_read16_reg(BMP085_I2CADDR, BMP085_CAL_MC);
-    md = I2C_read16_reg(BMP085_I2CADDR, BMP085_CAL_MD);
-
-    initialized = true;
+    if (set_resolution(AMBIENT_TEMPERATURE_ADDR, RESOLUTION_0_0625_DEGREE)) {
+      initialized = true;
+      return true;
+    } else {
+      return false;
+    }
   }
 
   return true;
 }
 
-uint16_t P202_data_struct::readRawTemperature()
-{
-  I2C_write8_reg(BMP085_I2CADDR, BMP085_CONTROL, BMP085_READTEMPCMD);
-  delay(5);
-  return I2C_read16_reg(BMP085_I2CADDR, BMP085_TEMPDATA);
-}
-
-uint32_t P202_data_struct::readRawPressure()
-{
-  uint32_t raw;
-
-  I2C_write8_reg(BMP085_I2CADDR, BMP085_CONTROL, BMP085_READPRESSURECMD + (oversampling << 6));
-
-  delay(26);
-
-  raw   = I2C_read16_reg(BMP085_I2CADDR, BMP085_PRESSUREDATA);
-  raw <<= 8;
-  raw  |= I2C_read8_reg(BMP085_I2CADDR, BMP085_PRESSUREDATA + 2);
-  raw >>= (8 - oversampling);
-
-  return raw;
-}
-
-int32_t P202_data_struct::readPressure()
-{
-  int32_t  UT, UP, B3, B5, B6, X1, X2, X3, p;
-  uint32_t B4, B7;
-
-  UT = readRawTemperature();
-  UP = readRawPressure();
-
-  // do temperature calculations
-  X1 = (UT - (int32_t)(ac6)) * ((int32_t)(ac5)) / 32768.0f /*pow(2, 15)*/;
-  X2 = ((int32_t)mc * 2048.0f /*pow(2, 11)*/) / (X1 + (int32_t)md);
-  B5 = X1 + X2;
-
-  // do pressure calcs
-  B6 = B5 - 4000;
-  X1 = ((int32_t)b2 * ((B6 * B6) >> 12)) >> 11;
-  X2 = ((int32_t)ac2 * B6) >> 11;
-  X3 = X1 + X2;
-  B3 = ((((int32_t)ac1 * 4 + X3) << oversampling) + 2) / 4;
-
-  X1 = ((int32_t)ac3 * B6) >> 13;
-  X2 = ((int32_t)b1 * ((B6 * B6) >> 12)) >> 16;
-  X3 = ((X1 + X2) + 2) >> 2;
-  B4 = ((uint32_t)ac4 * (uint32_t)(X3 + 32768)) >> 15;
-  B7 = ((uint32_t)UP - B3) * (uint32_t)(50000UL >> oversampling);
-
-  if (B7 < 0x80000000)
-  {
-    p = (B7 * 2) / B4;
-  }
-  else
-  {
-    p = (B7 / B4) * 2;
-  }
-  X1 = (p >> 8) * (p >> 8);
-  X1 = (X1 * 3038) >> 16;
-  X2 = (-7357 * p) >> 16;
-
-  p = p + ((X1 + X2 + (int32_t)3791) >> 4);
-  return p;
-}
-
 float P202_data_struct::readTemperature()
 {
-  int32_t UT, X1, X2, B5; // following ds convention
-  float   temp;
-
-  UT = readRawTemperature();
-
-  // step 1
-  X1    = (UT - (int32_t)ac6) * ((int32_t)ac5) / 32768.0f /*pow(2, 15)*/;
-  X2    = ((int32_t)mc * 2048.0f /*pow(2, 11)*/) / (X1 + (int32_t)md);
-  B5    = X1 + X2;
-  temp  = (B5 + 8) / 16.0f /*pow(2, 4)*/;
-  temp /= 10;
-
+  uint16_t temp_value = 0;
+  read_temp_reg(AMBIENT_TEMPERATURE_ADDR, &temp_value);
+  float temp = caculate_temp(temp_value);
   return temp;
+}
+
+// -----------------------------------------------------------------------------------------------
+
+/**@brief Set configuration of sensor.
+ * @param Register addr of sensor configuration.
+ * @param The value to set.
+ * @return 0 if success;
+ * 
+ * */
+int32_t P202_data_struct::set_config(uint8_t reg, uint16_t cfg)
+{
+    return I2C_write16_reg(DEFAULT_IIC_ADDR, reg, cfg);
+}
+
+/**@brief Set upper limit of sensor.
+ * @param Register addr of upper limit.
+ * @param The value to set.
+ * @return 0 if success;
+ * */
+int32_t P202_data_struct::set_upper_limit(uint8_t reg, uint16_t cfg)
+{
+    return I2C_write16_reg(DEFAULT_IIC_ADDR, reg, cfg);
+}
+
+/**@brief Set lower limit of sensor.
+ * @param Register addr of lower limit.
+ * @param The value to set.
+ * @return 0 if success;
+ * */
+int32_t P202_data_struct::set_lower_limit(uint8_t reg, uint16_t cfg)
+{
+    return I2C_write16_reg(DEFAULT_IIC_ADDR, reg, cfg);
+}
+
+/**@brief Set critical limit of sensor.
+ * @param Register addr of critical limit.
+ * @param The value to set.
+ * @return 0 if success;
+ * */
+int32_t P202_data_struct::set_critical_limit(uint8_t reg, uint16_t cfg)
+{
+    return I2C_write16_reg(DEFAULT_IIC_ADDR, reg, cfg);
+}
+
+/**@brief Set resolution of sensor.range:0,0.25,0.125,0.0625
+ * @param Register addr of resolution.
+ * @param The value to set.
+ * @return 0 if success;
+ * */
+int32_t P202_data_struct::set_resolution(uint8_t reg, uint8_t resolution)
+{
+    return I2C_write8_reg(DEFAULT_IIC_ADDR, reg, resolution);
+}
+
+
+/**@brief caculate u16 data to a float temp num;
+ * @param register addr of ambient temp.
+ * @param dst temp data.
+ * */
+int32_t P202_data_struct::read_temp_reg(uint8_t reg, uint16_t *temp)
+{
+    *temp = I2C_read16_reg(DEFAULT_IIC_ADDR, reg);
+    return 0;
+}
+
+/**@brief caculate u16 data to a float temp num;
+ * @param u16-form data.
+ * @return float-form temp data.
+ * */
+float P202_data_struct::caculate_temp(uint16_t temp_value)
+{
+    float temp = 0;
+    uint8_t temp_upper = 0, temp_lower = 0;
+    temp_upper = (uint8_t)(temp_value >> 8);
+    temp_lower = (uint8_t)temp_value;
+    if (temp_upper & SIGN_BIT) {
+        temp_upper &= 0x0f;
+        temp = 256 - (temp_upper * 16 + temp_lower * 0.0625);
+        temp *= -1;
+    }
+    temp_upper &= 0x0f;
+    temp = temp_upper * 16 + temp_lower * 0.0625;
+    
+    return temp;
 }
 
 #endif // ifdef USES_P202

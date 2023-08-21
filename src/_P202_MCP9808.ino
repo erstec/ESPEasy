@@ -63,12 +63,6 @@ boolean Plugin_202(uint8_t function, struct EventStruct *event, String& string)
       break;
     }
 
-    // case PLUGIN_I2C_HAS_ADDRESS:
-    // {
-    //   success = (event->Par1 == 0x18);
-    //   break;
-    // }
-
     # if FEATURE_I2C_GET_ADDRESS
     case PLUGIN_I2C_GET_ADDRESS:
     {
