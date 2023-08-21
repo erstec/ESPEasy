@@ -33,7 +33,7 @@ boolean Plugin_202(uint8_t function, struct EventStruct *event, String& string)
       Device[deviceCount].ValueCount         = 1;
       Device[deviceCount].SendDataOption     = true;
       Device[deviceCount].TimerOption        = true;
-      //Device[deviceCount].GlobalSyncOption   = true;
+      Device[deviceCount].GlobalSyncOption   = true;
       Device[deviceCount].PluginStats        = true;
       break;
     }
@@ -75,14 +75,12 @@ boolean Plugin_202(uint8_t function, struct EventStruct *event, String& string)
 
     case PLUGIN_WEBFORM_LOAD:
     {
-      // addFormNumericBox(F("Altitude [m]"), F("elev"), PCONFIG(1));
       success = true;
       break;
     }
 
     case PLUGIN_WEBFORM_SAVE:
     {
-      // PCONFIG(1) = getFormItemInt(F("elev"));
       PCONFIG(0) = getFormItemInt(F("i2c_addr"));
       success    = true;
       break;
