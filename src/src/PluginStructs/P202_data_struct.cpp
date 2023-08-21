@@ -21,7 +21,7 @@
 bool P202_data_struct::begin()
 {
   if (!initialized) {
-    if (set_resolution(AMBIENT_TEMPERATURE_ADDR, RESOLUTION_0_0625_DEGREE)) {
+    if (set_resolution(AMBIENT_TEMPERATURE_ADDR, RESOLUTION_0_25_DEGREE)) {
       initialized = true;
       return true;
     } else {
@@ -114,14 +114,16 @@ float P202_data_struct::caculate_temp(uint16_t temp_value)
     uint8_t temp_upper = 0, temp_lower = 0;
     temp_upper = (uint8_t)(temp_value >> 8);
     temp_lower = (uint8_t)temp_value;
-    if (temp_upper & SIGN_BIT) {
-        temp_upper &= 0x0f;
+
+    temp_upper &= 0x1f;           // Clear flag bits
+    if (temp_upper & SIGN_BIT) {  // Check SIGN
+        temp_upper &= 0x0f;       // Clear SIGN
         temp = 256 - (temp_upper * 16 + temp_lower * 0.0625);
         temp *= -1;
+    } else {
+      temp = temp_upper * 16 + temp_lower * 0.0625;
     }
-    temp_upper &= 0x0f;
-    temp = temp_upper * 16 + temp_lower * 0.0625;
-    
+
     return temp;
 }
 
