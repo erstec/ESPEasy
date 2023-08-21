@@ -503,7 +503,7 @@ static const char DATA_ESPEASY_DEFAULT_MIN_CSS[] PROGMEM = {
 //   #define P143_FEATURE_COUNTER_COLORMAPPING 0 // Enabled by default, can be turned off here
 // #define USES_P147   // SGP4x
 //   #define P147_FEATURE_GASINDEXALGORITHM    0 // Enabled by default, can be turned off here
-//#define USES_P202   // MCP9808
+#define USES_P202   // MCP9808
 
 
 
