@@ -2,21 +2,21 @@
 
 #ifdef USES_P202
 
-#define SET_CONFIG_ADDR           0X01
-#define SET_UPPER_LIMIT_ADDR      0X02
-#define SET_LOWER_LIMIT_ADDR      0X03
-#define SET_CRITICAL_LIMIT_ADDR   0X04
+#define SET_CONFIG_ADDR                     (0x01)
+#define SET_UPPER_LIMIT_ADDR                (0x02)
+#define SET_LOWER_LIMIT_ADDR                (0x03)
+#define SET_CRITICAL_LIMIT_ADDR             (0x04)
 
-#define AMBIENT_TEMPERATURE_ADDR  0X05
-#define SET_RESOLUTION_ADDR       0X08
+#define AMBIENT_TEMPERATURE_ADDR            (0x05)
+#define SET_RESOLUTION_ADDR                 (0x08)
 
-#define DEFAULT_IIC_ADDR  0X18
+#define RESOLUTION_0_5_DEGREE               (0x00)
+#define RESOLUTION_0_25_DEGREE              (0x01)
+#define RESOLUTION_0_125_DEGREE             (0x02)
+#define RESOLUTION_0_0625_DEGREE            (0x03)
+#define SIGN_BIT                            (0x10)
 
-#define RESOLUTION_0_5_DEGREE               0
-#define RESOLUTION_0_25_DEGREE              0X01
-#define RESOLUTION_0_125_DEGREE             0X02
-#define RESOLUTION_0_0625_DEGREE            0X03
-#define SIGN_BIT                            0X10
+P202_data_struct::P202_data_struct(uint8_t i2c_addr) : i2caddr(i2c_addr) {}
 
 bool P202_data_struct::begin()
 {
@@ -50,7 +50,7 @@ float P202_data_struct::readTemperature()
  * */
 int32_t P202_data_struct::set_config(uint8_t reg, uint16_t cfg)
 {
-    return I2C_write16_reg(DEFAULT_IIC_ADDR, reg, cfg);
+    return I2C_write16_reg(i2caddr, reg, cfg);
 }
 
 /**@brief Set upper limit of sensor.
@@ -60,7 +60,7 @@ int32_t P202_data_struct::set_config(uint8_t reg, uint16_t cfg)
  * */
 int32_t P202_data_struct::set_upper_limit(uint8_t reg, uint16_t cfg)
 {
-    return I2C_write16_reg(DEFAULT_IIC_ADDR, reg, cfg);
+    return I2C_write16_reg(i2caddr, reg, cfg);
 }
 
 /**@brief Set lower limit of sensor.
@@ -70,7 +70,7 @@ int32_t P202_data_struct::set_upper_limit(uint8_t reg, uint16_t cfg)
  * */
 int32_t P202_data_struct::set_lower_limit(uint8_t reg, uint16_t cfg)
 {
-    return I2C_write16_reg(DEFAULT_IIC_ADDR, reg, cfg);
+    return I2C_write16_reg(i2caddr, reg, cfg);
 }
 
 /**@brief Set critical limit of sensor.
@@ -80,7 +80,7 @@ int32_t P202_data_struct::set_lower_limit(uint8_t reg, uint16_t cfg)
  * */
 int32_t P202_data_struct::set_critical_limit(uint8_t reg, uint16_t cfg)
 {
-    return I2C_write16_reg(DEFAULT_IIC_ADDR, reg, cfg);
+    return I2C_write16_reg(i2caddr, reg, cfg);
 }
 
 /**@brief Set resolution of sensor.range:0,0.25,0.125,0.0625
@@ -90,7 +90,7 @@ int32_t P202_data_struct::set_critical_limit(uint8_t reg, uint16_t cfg)
  * */
 int32_t P202_data_struct::set_resolution(uint8_t reg, uint8_t resolution)
 {
-    return I2C_write8_reg(DEFAULT_IIC_ADDR, reg, resolution);
+    return I2C_write8_reg(i2caddr, reg, resolution);
 }
 
 
@@ -100,7 +100,7 @@ int32_t P202_data_struct::set_resolution(uint8_t reg, uint8_t resolution)
  * */
 int32_t P202_data_struct::read_temp_reg(uint8_t reg, uint16_t *temp)
 {
-    *temp = I2C_read16_reg(DEFAULT_IIC_ADDR, reg);
+    *temp = I2C_read16_reg(i2caddr, reg);
     return 0;
 }
 

@@ -13,6 +13,7 @@
 # define PLUGIN_NAME_202       "Environment - MCP9808"
 # define PLUGIN_VALUENAME1_202 "Temperature"
 
+# define P202_I2C_ADDR    (uint8_t)PCONFIG(0)
 
 boolean Plugin_202(uint8_t function, struct EventStruct *event, String& string)
 {
@@ -32,7 +33,7 @@ boolean Plugin_202(uint8_t function, struct EventStruct *event, String& string)
       Device[deviceCount].ValueCount         = 1;
       Device[deviceCount].SendDataOption     = true;
       Device[deviceCount].TimerOption        = true;
-      Device[deviceCount].GlobalSyncOption   = true;
+      //Device[deviceCount].GlobalSyncOption   = true;
       Device[deviceCount].PluginStats        = true;
       break;
     }
@@ -55,7 +56,7 @@ boolean Plugin_202(uint8_t function, struct EventStruct *event, String& string)
       const uint8_t i2cAddressValues[] = { 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F };
 
       if (function == PLUGIN_WEBFORM_SHOW_I2C_PARAMS) {
-        addFormSelectorI2C(F("i2c_addr"), 8, i2cAddressValues, PCONFIG(0));
+        addFormSelectorI2C(F("i2c_addr"), 8, i2cAddressValues, P202_I2C_ADDR);
         // addFormNote(F("ADDR Low=0x18, High=0x1f"));
       } else {
         success = intArrayContains(8, i2cAddressValues, event->Par1);
@@ -66,7 +67,7 @@ boolean Plugin_202(uint8_t function, struct EventStruct *event, String& string)
     # if FEATURE_I2C_GET_ADDRESS
     case PLUGIN_I2C_GET_ADDRESS:
     {
-      event->Par1 = PCONFIG(0);
+      event->Par1 = P202_I2C_ADDR;
       success     = true;
       break;
     }
@@ -89,11 +90,19 @@ boolean Plugin_202(uint8_t function, struct EventStruct *event, String& string)
 
     case PLUGIN_INIT:
     {
-      initPluginTaskData(event->TaskIndex, new (std::nothrow) P202_data_struct());
+      const uint8_t i2caddr = P202_I2C_ADDR;
+
+      initPluginTaskData(event->TaskIndex, new (std::nothrow) P202_data_struct(i2caddr));
       P202_data_struct *P202_data =
         static_cast<P202_data_struct *>(getPluginTaskData(event->TaskIndex));
 
-      success = (nullptr != P202_data);
+      if (nullptr != P202_data) {
+        if (loglevelActiveFor(LOG_LEVEL_INFO)) {
+          String log  = formatToHex(i2caddr, F("MCP9808 0x"), 2);
+          addLogMove(LOG_LEVEL_INFO, log);
+        }
+        success = true;
+      }
       break;
     }
 
@@ -108,8 +117,9 @@ boolean Plugin_202(uint8_t function, struct EventStruct *event, String& string)
           UserVar[event->BaseVarIndex] = P202_data->readTemperature();
 
           if (loglevelActiveFor(LOG_LEVEL_INFO)) {
-            String log = F("MCP  : Temperature: ");
+            String log = F("MCP9808  : Temperature: ");
             log += formatUserVarNoCheck(event->TaskIndex, 0);
+            log += formatToHex(P202_I2C_ADDR, F(" 0x"), 2);
             addLogMove(LOG_LEVEL_INFO, log);
           }
           success = true;

@@ -5,13 +5,18 @@
 #ifdef USES_P202
 
 struct P202_data_struct : public PluginTaskData_base {
-  P202_data_struct() = default;
+public:
+
+  P202_data_struct(uint8_t i2c_addr);
+
+  P202_data_struct() = delete;
   virtual ~P202_data_struct() = default;
 
   bool     begin();
 
   float    readTemperature();
 
+private:
   int32_t set_config(uint8_t reg, uint16_t cfg);
   int32_t set_upper_limit(uint8_t reg, uint16_t cfg);
   int32_t set_lower_limit(uint8_t reg, uint16_t cfg);
@@ -21,6 +26,8 @@ struct P202_data_struct : public PluginTaskData_base {
   float caculate_temp(uint16_t temp);
 
   bool initialized = false;
+
+  uint8_t i2caddr;
 };
 
 #endif // ifdef USES_P202
