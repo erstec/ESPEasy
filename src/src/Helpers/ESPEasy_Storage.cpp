@@ -184,8 +184,7 @@ fs::File tryOpenFile(const String& fname, const String& mode, FileDestination_e 
   #  if FEATURE_SD
 
   if (!f && ((destination == FileDestination_e::ANY) || (destination == FileDestination_e::SD))) {
-    // FIXME TD-er: Should this fallback to SD only be done on "r" mode?
-    f = SD.open(fname.c_str(), mode.c_str());
+    f = SD.open(patch_fname(fname).c_str(), mode.c_str());
   }
   #  endif // if FEATURE_SD
 
@@ -355,7 +354,7 @@ bool BuildFixes()
   }
   if (Settings.Build < 20111) {
     #ifdef ESP32
-    constexpr uint8_t maxStatesesp32 = sizeof(Settings.PinBootStates_ESP32) / sizeof(Settings.PinBootStates_ESP32[0]);
+    constexpr uint8_t maxStatesesp32 = NR_ELEMENTS(Settings.PinBootStates_ESP32);
     for (uint8_t i = 0; i < maxStatesesp32; ++i) {
       Settings.PinBootStates_ESP32[i] = 0;
     }
@@ -371,8 +370,10 @@ bool BuildFixes()
   if (Settings.Build < 20114) {
     #ifdef USES_P003
     // P003_Pulse was always using the pull-up, now it is a setting.
+    constexpr pluginID_t PLUGIN_ID_P003_PULSE(3);
+
     for (taskIndex_t taskIndex = 0; taskIndex < TASKS_MAX; ++taskIndex) {
-      if (Settings.TaskDeviceNumber[taskIndex] == 3) {
+      if (Settings.getPluginID_for_task(taskIndex) == PLUGIN_ID_P003_PULSE) {
         Settings.TaskDevicePin1PullUp[taskIndex] = true;
       }
     }
@@ -388,8 +389,10 @@ bool BuildFixes()
   #ifdef USES_P053
   if (Settings.Build < 20116) {
     // Added PWR button, init to "-none-"
+    constexpr pluginID_t PLUGIN_ID_P053_PMSx003(53);
+
     for (taskIndex_t taskIndex = 0; taskIndex < TASKS_MAX; ++taskIndex) {
-      if (Settings.TaskDeviceNumber[taskIndex] == 53) {
+      if (Settings.getPluginID_for_task(taskIndex) == PLUGIN_ID_P053_PMSx003) {
         Settings.TaskDevicePluginConfig[taskIndex][3] = -1;
       }
     }
@@ -751,6 +754,8 @@ uint8_t disablePlugin(uint8_t bootFailedCount) {
       --bootFailedCount;
 
       if (bootFailedCount == 0) {
+        // Disable temporarily as unit crashed
+        // FIXME TD-er: Should this be stored?
         Settings.TaskDeviceEnabled[i] = false;
       }
     }
@@ -762,6 +767,8 @@ uint8_t disableAllPlugins(uint8_t bootFailedCount) {
   if (bootFailedCount > 0) {
     --bootFailedCount;
     for (taskIndex_t i = 0; i < TASKS_MAX; ++i) {
+        // Disable temporarily as unit crashed
+        // FIXME TD-er: Should this be stored?
         Settings.TaskDeviceEnabled[i] = false;
     }
   }
