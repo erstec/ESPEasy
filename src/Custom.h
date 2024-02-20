@@ -373,7 +373,7 @@ static const char DATA_ESPEASY_DEFAULT_MIN_CSS[] PROGMEM = {
 
 // #define USES_P031   // SHT1X
 // #define USES_P032   // MS5611
-// #define USES_P033   // Dummy
+#define USES_P033   // Dummy
 // #define USES_P034   // DHT12
 #define USES_P036   // FrameOLED
 // #define USES_P037   // MQTTImport
