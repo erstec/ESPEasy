@@ -112,7 +112,7 @@ boolean Plugin_202(uint8_t function, struct EventStruct *event, String& string)
       if (nullptr != P202_data) {
         if (P202_data->begin())
         {
-          UserVar[event->BaseVarIndex] = P202_data->readTemperature();
+          UserVar.setFloat(event->TaskIndex, 0, P202_data->readTemperature());
 
           if (loglevelActiveFor(LOG_LEVEL_INFO)) {
             String log = F("MCP9808  : Temperature: ");
